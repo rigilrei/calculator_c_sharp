@@ -1,137 +1,160 @@
-using System;
-using System.Windows.Forms;
+using System.Globalization;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
 
-namespace CalculatorApp
+namespace WPF_05_308;
+
+public partial class MainWindow : Window
 {
-    public partial class CalculatorForm : Form
+    private decimal x = 0;
+    private decimal y = 0;
+    private string z = "";
+    private int cnt = 0;
+    private bool PointFlag = false;
+    private bool SignFlag = false;
+    public MainWindow()
     {
-        private double firstNumber = 0;
-        private double secondNumber = 0;
-        private string operation = "";
-        private bool isOperationPerformed = false;
+        InitializeComponent();
+    }
 
-        public CalculatorForm()
+    void onClickNumber(object sender, RoutedEventArgs e)
+    {
+        var btn = (Button)sender;
+        var number = (string)btn.Content;
+
+        if (SignFlag)
         {
-            InitializeComponent();
+            PointFlag = false;
+            SignFlag = false;
+            cnt = 0;
         }
 
-        private void NumberButton_Click(object sender, EventArgs e)
+        if (number == ",")
         {
-            Button button = (Button)sender;
-            
-            if (textBoxResult.Text == "0" || isOperationPerformed)
+            if (!PointFlag)
             {
-                textBoxResult.Clear();
-                isOperationPerformed = false;
+                Calc.Text += number;
+                PointFlag = true;
             }
-            
-            if (button.Text == ".")
+            return;
+        }
+
+
+        Calc.Text += number;
+        if (!PointFlag)
+        {
+            y = y * 10 + decimal.Parse(number);
+        }
+        else
+        {
+            cnt++;
+            y = y + decimal.Parse(number) / (decimal)Math.Pow(10, cnt);
+
+        }
+    }
+
+    void onClickSign(object sender, RoutedEventArgs e)
+    {
+        var btn = (Button)sender;
+        var sign = (string)btn.Content;
+
+        if (z == "")
+        {
+            x = y;
+        }
+        else
+        {
+            switch (z)
             {
-                if (!textBoxResult.Text.Contains("."))
-                {
-                    textBoxResult.Text += button.Text;
-                }
+                case "+": x = x + y; break;
+                case "-": x = x - y; break;
+                case "x": x = x * y; break;
+                case "/":
+                    if (y == 0)
+                    {
+                        MessageBox.Show("ватафак, делить на ноль нельзя!");
+                        return;
+                    }
+                    x = x / y;
+                    break;
+            }
+        }
+        z = sign;
+        y = 0;
+        if (z == "+" || z == "-" || z == "x" || z == "/")
+        {
+            Calc.Text = FormatNumber(x) + z;
+            SignFlag = true;
+        }
+        else if (z == "=")
+        {
+            Calc.Text = FormatNumber(x);
+        }
+        else if (z == "+/-")
+        {
+            if (y != 0)
+            {
+                y = -y;
+                Calc.Text = FormatNumber(y);
             }
             else
             {
-                textBoxResult.Text += button.Text;
+                x = -x;
+                Calc.Text = FormatNumber(x);
             }
         }
-
-        private void OperationButton_Click(object sender, EventArgs e)
+    }
+    void onClickDelete(object sender, RoutedEventArgs e)
+    {
+        var btn = (Button)sender;
+        var dell = (string)btn.Content;
+        if (dell == "C")
         {
-            Button button = (Button)sender;
-            
-            if (firstNumber != 0)
-            {
-                buttonEquals.PerformClick();
-            }
-            
-            firstNumber = double.Parse(textBoxResult.Text);
-            operation = button.Text;
-            isOperationPerformed = true;
-            labelCurrentOperation.Text = $"{firstNumber} {operation}";
+            Calc.Text = "";
+            x = 0;
+            y = 0;
+            z = "";
+            PointFlag = false;
+            SignFlag = false;
+            cnt = 0;
         }
-
-        private void buttonEquals_Click(object sender, EventArgs e)
+        else if (dell == "del")
         {
-            if (string.IsNullOrEmpty(operation)) return;
-            
-            secondNumber = double.Parse(textBoxResult.Text);
-            labelCurrentOperation.Text = $"{firstNumber} {operation} {secondNumber} =";
-            
-            try
+            if (!string.IsNullOrEmpty(Calc.Text))
             {
-                switch (operation)
+                Calc.Text = Calc.Text.Substring(0, Calc.Text.Length - 1);
+
+                if (Calc.Text.Length > 0 && !Calc.Text.Contains(","))
                 {
-                    case "+":
-                        textBoxResult.Text = (firstNumber + secondNumber).ToString();
-                        break;
-                    case "-":
-                        textBoxResult.Text = (firstNumber - secondNumber).ToString();
-                        break;
-                    case "×":
-                        textBoxResult.Text = (firstNumber * secondNumber).ToString();
-                        break;
-                    case "÷":
-                        if (secondNumber == 0)
-                        {
-                            throw new DivideByZeroException();
-                        }
-                        textBoxResult.Text = (firstNumber / secondNumber).ToString();
-                        break;
+                    PointFlag = false;
                 }
-                
-                firstNumber = double.Parse(textBoxResult.Text);
-                operation = "";
-            }
-            catch (DivideByZeroException)
-            {
-                MessageBox.Show("Нельзя делить на ноль!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                ClearAll();
-            }
-        }
 
-        private void buttonClear_Click(object sender, EventArgs e)
-        {
-            ClearAll();
-        }
-
-        private void ClearAll()
-        {
-            textBoxResult.Text = "0";
-            firstNumber = 0;
-            secondNumber = 0;
-            operation = "";
-            labelCurrentOperation.Text = "";
-            isOperationPerformed = false;
-        }
-
-        private void buttonBackspace_Click(object sender, EventArgs e)
-        {
-            if (textBoxResult.Text.Length > 1)
-            {
-                textBoxResult.Text = textBoxResult.Text.Remove(textBoxResult.Text.Length - 1);
-            }
-            else
-            {
-                textBoxResult.Text = "0";
-            }
-        }
-
-        private void buttonPlusMinus_Click(object sender, EventArgs e)
-        {
-            if (textBoxResult.Text != "0")
-            {
-                if (!textBoxResult.Text.Contains("-"))
+                if (Calc.Text.Length == 0)
                 {
-                    textBoxResult.Text = "-" + textBoxResult.Text;
-                }
-                else
-                {
-                    textBoxResult.Text = textBoxResult.Text.Substring(1);
+                    y = 0;
                 }
             }
         }
+    }
+    private string FormatNumber(decimal number)
+    {
+        string result = number.ToString(CultureInfo.CurrentCulture);
+        if (result.Contains(","))
+        {
+            result = result.TrimEnd('0');
+            if (result.EndsWith(","))
+            {
+                result = result.Substring(0, result.Length - 1);
+            }
+        }
+        return result;
     }
 }
